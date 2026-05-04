@@ -14,11 +14,17 @@ export async function POST(req) {
     // Strip out the data:image/...;base64, part
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-    const credentialsPath = path.join(process.cwd(), 'google-credentials.json');
-    const client = new vision.ImageAnnotatorClient({
-      keyFilename: credentialsPath,
-      fallback: true // Use REST instead of gRPC to avoid next.js bundling issues
-    });
+    let clientOptions = { fallback: true };
+    if (process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_CLIENT_EMAIL) {
+      clientOptions.credentials = {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      };
+      clientOptions.projectId = process.env.GOOGLE_PROJECT_ID;
+    } else {
+      clientOptions.keyFilename = path.join(process.cwd(), 'google-credentials.json');
+    }
+    const client = new vision.ImageAnnotatorClient(clientOptions);
 
     const request = {
       image: {
