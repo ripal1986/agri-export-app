@@ -6,8 +6,10 @@ import "./globals.css";
 
 export default function Home() {
   const [role, setRole] = useState(null); // 'helper' or 'admin'
-  const [adminPin, setAdminPin] = useState("");
-  
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
   const [activeTab, setActiveTab] = useState("new"); // helper: new, recent | admin: pending, completed, settings
   const [recentEntries, setRecentEntries] = useState([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(false);
@@ -75,14 +77,26 @@ export default function Home() {
     setIsLoadingRecent(false);
   };
 
-  const handleAdminLogin = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (adminPin.trim() === "1234") {
-      setRole("admin");
-      setActiveTab("pending");
-    } else {
-      alert("ખોટો પિન!");
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRole(data.role);
+        setActiveTab(data.role === 'admin' ? 'pending' : 'new');
+      } else {
+        alert(data.error);
+      }
+    } catch (e) {
+      alert("નેટવર્ક એરર!");
     }
+    setIsLoggingIn(false);
   };
 
   const netWeight = parseFloat(formData.netWeight) || 0;
@@ -297,20 +311,20 @@ export default function Home() {
   if (role === null) {
     return (
       <main style={{ padding: "2rem", maxWidth: "400px", margin: "10vh auto" }} className="app-container glass-panel animate-fade-in">
-        <h1 style={{ textAlign: "center", color: "var(--primary)", marginBottom: "2rem" }}>કોણ વાપરી રહ્યું છે?</h1>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <button type="button" className="btn btn-primary" style={{ padding: "1.5rem", fontSize: "1.2rem" }} onClick={() => setRole("helper")}>
-            <UserCircle /> હું મેનેજર (Manager) છું
-          </button>
-          
-          <div style={{ marginTop: "1rem", padding: "1rem", background: "rgba(0,0,0,0.2)", borderRadius: "8px" }}>
-            <label className="form-label">એડમિન પિન (PIN)</label>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <input type="password" placeholder="1234" value={adminPin} onChange={e => setAdminPin(e.target.value)} className="form-input" required />
-              <button type="button" onClick={handleAdminLogin} className="btn btn-success">Login</button>
-            </div>
+        <h1 style={{ textAlign: "center", color: "var(--primary)", marginBottom: "2rem" }}>લૉગિન (Login)</h1>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className="form-group">
+            <label className="form-label">યુઝરનેમ (Username)</label>
+            <input type="text" value={loginUsername} onChange={e => setLoginUsername(e.target.value)} className="form-input" required />
           </div>
-        </div>
+          <div className="form-group">
+            <label className="form-label">પાસવર્ડ (Password)</label>
+            <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className="form-input" required />
+          </div>
+          <button type="submit" className="btn btn-primary" style={{ padding: "1rem", marginTop: "1rem" }} disabled={isLoggingIn}>
+            {isLoggingIn ? "લોગીન ચાલુ છે..." : "લૉગિન કરો"}
+          </button>
+        </form>
       </main>
     );
   }

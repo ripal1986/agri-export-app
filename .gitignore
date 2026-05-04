@@ -42,3 +42,5 @@ next-env.d.ts
 
 # credentials
 google-credentials.json
+
+.vercel
